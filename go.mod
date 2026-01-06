@@ -1,0 +1,3 @@
+module github.com/agustinnigrelli/web
+
+go 1.24.5
