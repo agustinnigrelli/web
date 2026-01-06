@@ -3,8 +3,8 @@ package web
 import (
 	"net/http"
 
-	"github.com/agustinnigrelli/web/response"
-	"github.com/agustinnigrelli/web/router"
+	"github.com/agustinnigrelli/web/internal/response"
+	"github.com/agustinnigrelli/web/internal/router"
 )
 
 type Router = router.Router
