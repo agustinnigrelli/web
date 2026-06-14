@@ -154,6 +154,8 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 ### Bind JSON Body
 
+`BindBody` enforces a 10MB limit:
+
 ```go
 type User struct {
 	Name  string `json:"name"`
@@ -170,20 +172,16 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-### Bind JSON Body with Size Limit
+### Bind JSON Body with Custom Size Limit
 
-`BindBodyWithBytesLimit` enforces a 10MB default limit. For custom limits:
+`BindBodyWithBytesLimit` lets you specify a custom limit:
 
 ```go
 func handler(w http.ResponseWriter, req *http.Request) {
 	var user User
 	maxBytes := int64(5 << 20) // 5MB
 	if err := web.BindBodyWithBytesLimit(req, &user, maxBytes); err != nil {
-		if err == web.ErrBodyTooLarge {
-			web.ErrorResponse(w, http.StatusRequestEntityTooLarge, "Body too large")
-		} else {
-			web.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
-		}
+		web.ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	// Use user...
