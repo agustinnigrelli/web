@@ -271,6 +271,12 @@ func TestBindBody(t *testing.T) {
 			wantCode: http.StatusOK,
 			wantBody: "bytes",
 		},
+		{
+			name:     "body exceeding 10MB default limit returns ErrBodyTooLarge",
+			body:     strings.NewReader(strings.Repeat("x", 11<<20)),
+			wantCode: http.StatusRequestEntityTooLarge,
+			wantBody: "too large",
+		},
 	}
 
 	for _, tc := range tests {
@@ -283,6 +289,11 @@ func TestBindBody(t *testing.T) {
 					Data  string `json:"data"`
 				}
 				if err := BindBody(req, &v); err != nil {
+					if err == request.ErrBodyTooLarge {
+						w.WriteHeader(http.StatusRequestEntityTooLarge)
+						w.Write([]byte("too large"))
+						return
+					}
 					w.Write([]byte("err:" + err.Error()))
 					return
 				}
