@@ -8,13 +8,14 @@ import (
 type Middleware func(http.HandlerFunc) http.HandlerFunc
 
 type Router struct {
-	mux         *http.ServeMux
-	prefix      string
-	middlewares []Middleware
+	mux             *http.ServeMux
+	prefix          string
+	middlewares     []Middleware
+	optionsPatterns map[string]bool
 }
 
 func NewRouter() *Router {
-	return &Router{mux: http.NewServeMux()}
+	return &Router{mux: http.NewServeMux(), optionsPatterns: map[string]bool{}}
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -27,21 +28,27 @@ func (r *Router) Use(mw ...Middleware) {
 }
 
 func (r *Router) handle(method, pattern string, handler http.HandlerFunc) {
-	fullPattern := r.prefix + pattern
-
-	routeHandler := func(w http.ResponseWriter, req *http.Request) {
-		if req.Method != method {
-			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		handler(w, req)
-	}
+	fullPattern := method + " " + r.prefix + pattern
 
 	for i := len(r.middlewares) - 1; i >= 0; i-- {
-		routeHandler = r.middlewares[i](routeHandler)
+		handler = r.middlewares[i](handler)
 	}
 
-	r.mux.HandleFunc(fullPattern, routeHandler)
+	r.mux.HandleFunc(fullPattern, handler)
+
+	if method != http.MethodOptions {
+		optionsPattern := http.MethodOptions + " " + r.prefix + pattern
+		if !r.optionsPatterns[optionsPattern] {
+			r.optionsPatterns[optionsPattern] = true
+			optionsHandler := func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}
+			for i := len(r.middlewares) - 1; i >= 0; i-- {
+				optionsHandler = r.middlewares[i](optionsHandler)
+			}
+			r.mux.HandleFunc(optionsPattern, optionsHandler)
+		}
+	}
 }
 
 func (r *Router) Get(pattern string, handler http.HandlerFunc) {
@@ -71,8 +78,13 @@ func (r *Router) Head(pattern string, handler http.HandlerFunc) {
 func (r *Router) Group(prefix string) *Router {
 	p := "/" + strings.Trim(prefix, "/")
 	return &Router{
-		mux:         r.mux,
-		prefix:      r.prefix + p,
-		middlewares: append([]Middleware(nil), r.middlewares...),
+		mux:             r.mux,
+		prefix:          r.prefix + p,
+		middlewares:     append([]Middleware(nil), r.middlewares...),
+		optionsPatterns: r.optionsPatterns,
 	}
+}
+
+func (r *Router) Options(pattern string, handler http.HandlerFunc) {
+	r.handle(http.MethodOptions, pattern, handler)
 }

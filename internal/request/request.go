@@ -10,6 +10,8 @@ import (
 
 var ErrBodyTooLarge = errors.New("request body too large")
 
+const DefaultMaxBytes int64 = 10 << 20
+
 func GetParam(r *http.Request, name string) string {
 	return r.PathValue(name)
 }
@@ -23,9 +25,13 @@ func GetHeader(r *http.Request, name string) string {
 }
 
 func BindBody(r *http.Request, v any) error {
-	bodyBytes, err := io.ReadAll(r.Body)
+	lr := io.LimitReader(r.Body, DefaultMaxBytes+1)
+	bodyBytes, err := io.ReadAll(lr)
 	if err != nil {
 		return err
+	}
+	if int64(len(bodyBytes)) > DefaultMaxBytes {
+		return ErrBodyTooLarge
 	}
 	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 	return json.Unmarshal(bodyBytes, v)

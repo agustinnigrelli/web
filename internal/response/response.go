@@ -6,17 +6,23 @@ import (
 )
 
 func JsonResponse(w http.ResponseWriter, status int, data any) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	w.Write(b)
 }
 
 func ErrorResponse(w http.ResponseWriter, status int, message string) {
+	b, err := json.Marshal(map[string]any{"status": status, "message": message})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(map[string]any{"status": status, "message": message}); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	w.Write(b)
 }
