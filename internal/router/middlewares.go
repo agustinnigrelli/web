@@ -91,6 +91,9 @@ type responseWriter struct {
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
+	if code == 0 {
+		code = http.StatusOK
+	}
 	rw.statusCode = code
 	rw.ResponseWriter.WriteHeader(code)
 }
