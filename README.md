@@ -172,7 +172,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 ### Bind JSON Body with Size Limit
 
-`BindBody` enforces a 10MB default limit. For custom limits:
+`BindBodyWithBytesLimit` enforces a 10MB default limit. For custom limits:
 
 ```go
 func handler(w http.ResponseWriter, req *http.Request) {
